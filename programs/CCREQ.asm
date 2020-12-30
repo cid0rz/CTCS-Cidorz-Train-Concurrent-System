@@ -1,4 +1,5 @@
 ##CCREQ
+hlt
 :start
 clr
 :check_inventory
@@ -15,7 +16,7 @@ xmov mem1 red
 nop
 xmov mem2 red
 :select_channel
-beq cnm2 0 :start
+blt cnm2 3 :start ; to prevent infinite looping
 rnd r7 1 cnm2
 floor r7
 mov r1 mem2@7
@@ -49,29 +50,27 @@ add r1 r3            ; 3 digits for material ID
 mov out1 r1
 mov out1 0
 ;second pulse
-ssv r1    2000000000 ;2 for the second pulse
+ssv r8    2000000000 ;2 for the second pulse
+sst r8 r1
 ;there are 3 unused digits
-
-
 fig r3 [virtual-signal=signal-station-number]           ;retrieve station number
 mul r3 1000
-add r1 r3            ;3 digits for req ID
+add r8 r3            ;3 digits for req ID
 div r6 1000     ;3 digits for thousands of goods requested
-add r1 r6
+add r8 r6
 
 btr [virtual-signal=signal-yellow]
+mov out1 r8
+mov out1 0
+mov r7 0
+btr [virtual-signal=signal-green] ;trigger for replies
+nop
+fir r7 r2
+beq r7 0 :start ;no one replied
 mov out1 r1
 mov out1 0
-hlt
-btr [virtual-signal=signal-cyan](trigger for replies)
-fir r1 r2
-
-
-
-:calculate number of trains
-fid r1 mem1 r5 ;get stack size
-div r5 r1 ;number of stacks
-div r5 40 ;number of wagons
-floor r5
-div r5 r4 ;number of trains
-ceil r5 ;we always round up for safety
+:wait_for_trains
+mov out1 1[virtual-signal=signal-white]
+mov out1 r7
+mov out1 0
+jmp 1
